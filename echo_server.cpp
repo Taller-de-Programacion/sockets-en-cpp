@@ -47,7 +47,7 @@ int main() {
      * con fines didacticos.
      * */
     struct socket_t peer, srv;
-    s = socket_init_for_listen(&srv, "3129");
+    s = srv.socket_init_for_listen("3129");
     if (s == -1)
         goto listening_failed;
 
@@ -57,7 +57,7 @@ int main() {
      * conectado en particular usando un socket distinto, el peer,
      * inicializado aqui.
      * */
-    s = socket_accept(&srv, &peer);
+    s = srv.socket_accept(&peer);
     if (s == -1)
         goto accept_failed;
 
@@ -88,7 +88,7 @@ int main() {
          * Pregunta: por que usamos sizeof(buf) en este socket_recvsome()
          * pero usamos sizeof(buf)-1 en el socket_recvsome() de get_page.cpp?
          * */
-        int sz = socket_recvsome(&peer, buf, sizeof(buf), &was_closed);
+        int sz = peer.socket_recvsome(buf, sizeof(buf), &was_closed);
 
         if (was_closed)
             break;
@@ -96,7 +96,7 @@ int main() {
         if (sz < 0)
             goto recv_failed;
 
-        s = socket_sendall(&peer, buf, sz, &was_closed);
+        s = peer.socket_sendall(buf, sz, &was_closed);
 
         if (was_closed)
             break;
@@ -109,14 +109,14 @@ int main() {
 
 send_failed:
 recv_failed:
-    socket_shutdown(&peer, 2);
-    socket_close(&peer);
-    socket_deinit(&peer);
+    peer.socket_shutdown(2);
+    peer.socket_close();
+    peer.socket_deinit();
 
 accept_failed:
-    socket_shutdown(&srv, 2);
-    socket_close(&srv);
-    socket_deinit(&srv);
+    srv.socket_shutdown(2);
+    srv.socket_close();
+    srv.socket_deinit();
 
 listening_failed:
     return ret;

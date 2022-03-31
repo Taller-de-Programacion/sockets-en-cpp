@@ -11,9 +11,9 @@
 #include <netdb.h>
 #include <unistd.h>
 
-int resolver_init(struct resolver_t *self, const char* hostname, const char* servicename, bool passive) {
+int resolver_t::resolver_init(const char* hostname, const char* servicename, bool passive) {
     struct addrinfo hints;
-    self->result = self->next = nullptr;
+    this->result = this->next = nullptr;
 
     /*
      * getaddrinfo nos puede retornar multiples direcciones incluso de
@@ -37,7 +37,7 @@ int resolver_init(struct resolver_t *self, const char* hostname, const char* ser
      * El resultado lo guarda en result que es un puntero al primer nodo
      * de una lista simplemente enlazada.
      * */
-    int s = getaddrinfo(hostname, servicename, &hints, &self->result);
+    int s = getaddrinfo(hostname, servicename, &hints, &this->result);
 
     /* Es muy importante chequear los errores.
      * En caso de uno, usar gai_strerror para traducir el codigo de error (s)
@@ -48,21 +48,21 @@ int resolver_init(struct resolver_t *self, const char* hostname, const char* ser
         return 1;  // TODO lanzar una excepcion
     }
 
-    self->next = self->result;
+    this->next = this->result;
     return 0;
 }
 
-bool resolver_has_next(struct resolver_t *self) {
-    return self->next != NULL;
+bool resolver_t::resolver_has_next() {
+    return this->next != NULL;
 }
 
-struct addrinfo* resolver_next(struct resolver_t *self) {
-    struct addrinfo *ret = self->next;
-    self->next = ret->ai_next;
+struct addrinfo* resolver_t::resolver_next() {
+    struct addrinfo *ret = this->next;
+    this->next = ret->ai_next;
     return ret;
 }
 
-void resolver_deinit(struct resolver_t *self) {
+void resolver_t::resolver_deinit() {
     /*
      * Como la lista reservada por getaddrinfo() es dinamica requiere
      * una desinicializacion acorde.
@@ -70,6 +70,6 @@ void resolver_deinit(struct resolver_t *self) {
      * Podes imaginarte que getaddrinfo() hace un malloc() y que
      * el freeaddrinfo() es su correspondiente free()
      * */
-    freeaddrinfo(self->result);
+    freeaddrinfo(this->result);
 }
 
