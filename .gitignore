@@ -1,0 +1,4 @@
+*.o
+get_page
+echo_server
+.*.swp
