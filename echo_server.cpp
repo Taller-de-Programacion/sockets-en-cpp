@@ -26,7 +26,6 @@
  **/
 int main() {
     int ret = -1;
-    int s = -1;
     bool was_closed = false;
 
     /*
@@ -46,19 +45,15 @@ int main() {
      * En general es una mala idea hardcodear IPs/puertos, aca esta
      * con fines didacticos.
      * */
-    Socket peer, srv("3129");
-        if (s == -1)
-        goto listening_failed;
+    Socket srv("3129");
 
     /*
      * Bloqueamos el programa hasta q haya una conexion entrante
      * y sea aceptada. Hablaremos (send/recv) con ese cliente
      * conectado en particular usando un socket distinto, el peer,
-     * inicializado aqui.
+     * construido dentro mismo de srv.accept() y movido aqui.
      * */
-    s = srv.accept(&peer);
-    if (s == -1)
-        goto accept_failed;
+    Socket peer = srv.accept();
 
     /*
      * A partir de aqui podriamos volver a usar srv para aceptar
@@ -95,12 +90,12 @@ int main() {
         if (sz < 0)
             goto recv_failed;
 
-        s = peer.sendall(buf, sz, &was_closed);
+        int s = peer.sendall(buf, sz, &was_closed);
 
         if (was_closed)
             break;
 
-        if (sz < 0)
+        if (sz != s)
             goto send_failed;
     }
 
@@ -113,7 +108,5 @@ int main() {
     // las cosas. Este es el poder de RAII (Resource Acquisition is Initialization)
 send_failed:
 recv_failed:
-accept_failed:
-listening_failed:
     return ret;
 }

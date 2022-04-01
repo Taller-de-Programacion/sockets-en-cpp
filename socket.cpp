@@ -143,25 +143,17 @@ Socket::Socket(const char *servicename) {
     // TODO lanzar excepcion
 }
 
-// A hack
-Socket::Socket() {
-    this->skt = -1;
-    this->closed = true;
-}
-
 /*
- * Inicializa el socket pasandole directamente el file descriptor.
+ * Constructor que inicializa el socket pasandole directamente el file descriptor.
  *
  * No queremos que el codigo del usuario este manipulando el file descriptor,
  * queremos q interactue con él *solo* a traves de Socket.
  *
- * Por ello ponemos este metodo privado (vease socket.h).
+ * Por ello ponemos este constructor privado (vease socket.h).
  * */
-int Socket::init_with_file_descriptor(Socket *self, int skt) {
-    self->skt = skt;
-    self->closed = false;
-
-    return 0;
+Socket::Socket(int skt) {
+    this->skt = skt;
+    this->closed = false;
 }
 
 int Socket::recvsome(void *data, unsigned int sz, bool *was_closed) {
@@ -262,22 +254,24 @@ int Socket::sendall(const void *data, unsigned int sz, bool *was_closed) {
     return sz;
 }
 
-int Socket::accept(struct Socket *peer) {
+Socket Socket::accept() {
     int skt = ::accept(this->skt, nullptr, nullptr);
-    if (skt == -1)
-        return -1;
+    //if (skt == -1)
+    //    return -1;
+    //    TODO lanzar excepcion
 
-    // Esto es un HACK por que tomamos un objeto
-    // construido y le pisamos cosas internas.
-    //
-    // Lo correcto seria instanciar el Socket peer aca
-    // dentro de Socket::accept y retornarlo pero
-    // para eso necesitamos Move Semantics
-    int s = init_with_file_descriptor(peer, skt);
-    if (s == -1)
-        return -1;
-
-    return 0;
+    /*
+     * Creamos un Socket en el scope de Socket::accept() y lo retornamos.
+     * Por default C y C++ harian una copia pero copiar un Socket no tiene
+     * sentido y ya tenemos al constructor por copia deshabilitado
+     * asi que no funcionara.
+     *
+     * Lo que queremos es que este Socket siga vivo y se mueva al scope
+     * superior (a quien llamo a Socket::accept().
+     *
+     * Este es el corazon de Move Semantics.
+     * */
+    return Socket(skt);
 }
 
 int Socket::shutdown(int how) {

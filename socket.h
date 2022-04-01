@@ -10,7 +10,7 @@ class Socket {
     int skt;
     bool closed;
 
-    int init_with_file_descriptor(Socket *self, int skt);
+    Socket(int skt);
 
     public:
     /*
@@ -30,16 +30,6 @@ class Socket {
      * */
     Socket(const char *hostname, const char *servicename);
     Socket(const char *servicename);
-
-    /*
-     * Un constructor sin parametros es el llamado constructor por default.
-     * En ciertos casos es necesario pero suelen ser un peligro ya que
-     * no suelen poder inicializar correctamente al objeto.
-     *
-     * En nuestro caso es un HACK para poder implementar Socket::accept
-     * pero lo resolveremos con Move Semantics pronto....
-     * */
-    Socket();
 
     /* Socket::sendsome() lee hasta sz bytes del buffer y los envia. La funcion
      * puede enviar menos bytes sin embargo.
@@ -76,13 +66,10 @@ class Socket {
     int recvall(void *data, unsigned int sz, bool *was_closed);
 
     /*
-     * Acepta una conexion entrante e inicializa con ella el socket peer.
-     * Dicho socket peer debe estar *sin* inicializar y si Socket::accept() es
-     * exitoso, se debe llamar a Socket::deinit() sobre él.
-     *
-     * Retorna -1 en caso de error, 0 de otro modo.
+     * Acepta una conexion entrante y construye con ella un Socket peer.
+     * Dicho Socket peer es retornado por move semantics.
      * */
-    int accept(struct Socket *peer);
+    Socket accept();
 
     /*
      * Cierra la conexion ya sea parcial o completamente.
