@@ -46,9 +46,8 @@ int main() {
      * En general es una mala idea hardcodear IPs/puertos, aca esta
      * con fines didacticos.
      * */
-    Socket peer, srv;
-    s = srv.init_for_listen("3129");
-    if (s == -1)
+    Socket peer, srv("3129");
+        if (s == -1)
         goto listening_failed;
 
     /*
@@ -107,17 +106,14 @@ int main() {
 
     ret = 0;
 
+
+    // Por que instanciamos el Socket en el stack, cuando la funcion main()
+    // termine se llamara al destructor de Socket automaticamente
+    // lo que significa que no tenemos que acordarnos de liberar
+    // las cosas. Este es el poder de RAII (Resource Acquisition is Initialization)
 send_failed:
 recv_failed:
-    peer.shutdown(2);
-    peer.close();
-    peer.deinit();
-
 accept_failed:
-    srv.shutdown(2);
-    srv.close();
-    srv.deinit();
-
 listening_failed:
     return ret;
 }

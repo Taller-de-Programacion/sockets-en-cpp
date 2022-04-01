@@ -50,8 +50,7 @@ int main() {
      * fallo y por lo tanto una desinicializacion podria terminar
      * en liberar recursos que no fueron reservados en primer lugar
      * */
-    Socket skt;
-    s = skt.init_for_connection("www.google.com.ar", "http");
+    Socket skt("www.google.com.ar", "http");
     if (s == -1)
         goto connection_failed;
 
@@ -99,12 +98,12 @@ int main() {
 
     ret = 0;
 
+    // Por que instanciamos el Socket en el stack, cuando la funcion main()
+    // termine se llamara al destructor de Socket automaticamente
+    // lo que significa que no tenemos que acordarnos de liberar
+    // las cosas. Este es el poder de RAII (Resource Acquisition is Initialization)
 recv_failed:
 send_req_failed:
-    skt.shutdown(2);
-    skt.close();
-    skt.deinit();
-
 connection_failed:
     return ret;
 }

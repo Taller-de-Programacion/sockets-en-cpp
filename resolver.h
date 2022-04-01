@@ -19,7 +19,7 @@ class Resolver {
      *
      * Retorna 0 en caso de exito, -1 en caso de error.
      * */
-    int init(const char* hostname, const char* servicename, bool passive);
+    Resolver(const char* hostname, const char* servicename, bool passive);
 
 
     /* Retorna si hay o no una direccion siguiente para testear.
@@ -39,7 +39,7 @@ class Resolver {
     /*
      * Libera los recursos.
      * */
-    void deinit();
+    ~Resolver();
 
 };
 

@@ -14,9 +14,9 @@ class Socket {
 
     public:
     /*
-     * Inicializamos el socket tanto para conectarse a un servidor
-     * (Socket::init_for_connection) como para inicializarlo para ser usado
-     * por un servidor (Socket::init_for_listen).
+     * Construye el socket tanto para conectarse a un servidor
+     * (primer constructor) como para inicializarlo para ser usado
+     * por un servidor (segundo constructor).
      *
      * Muchas librerias de muchos lenguajes ofrecen una unica formal de inicializar
      * los sockets y luego metodos (post-inicializacion) para establer
@@ -27,11 +27,19 @@ class Socket {
      *
      * Este codigo es un ejemplo de ello.
      *
-     * Ambas funciones retornan 0 si se pudo conectar/poner en escucha
-     * o -1 en caso de error.
      * */
-    int init_for_connection(const char *hostname, const char *servicename);
-    int init_for_listen(const char *servicename);
+    Socket(const char *hostname, const char *servicename);
+    Socket(const char *servicename);
+
+    /*
+     * Un constructor sin parametros es el llamado constructor por default.
+     * En ciertos casos es necesario pero suelen ser un peligro ya que
+     * no suelen poder inicializar correctamente al objeto.
+     *
+     * En nuestro caso es un HACK para poder implementar Socket::accept
+     * pero lo resolveremos con Move Semantics pronto....
+     * */
+    Socket();
 
     /* Socket::sendsome() lee hasta sz bytes del buffer y los envia. La funcion
      * puede enviar menos bytes sin embargo.
@@ -93,7 +101,7 @@ class Socket {
      * se llamara a Socket::shutdown() y Socket::close()
      * automaticamente.
      * */
-    void deinit();
+    ~Socket();
 
 };
 

@@ -11,7 +11,7 @@
 #include <netdb.h>
 #include <unistd.h>
 
-int Resolver::init(const char* hostname, const char* servicename, bool passive) {
+Resolver::Resolver(const char* hostname, const char* servicename, bool passive) {
     struct addrinfo hints;
     this->result = this->next_ = nullptr;
 
@@ -45,11 +45,10 @@ int Resolver::init(const char* hostname, const char* servicename, bool passive) 
      * */
     if (s != 0) {
         printf("Error in getaddrinfo: %s\n", gai_strerror(s));
-        return 1;  // TODO lanzar una excepcion
+        return ;  // TODO lanzar una excepcion
     }
 
     this->next_ = this->result;
-    return 0;
 }
 
 bool Resolver::has_next() {
@@ -62,7 +61,7 @@ struct addrinfo* Resolver::next() {
     return ret;
 }
 
-void Resolver::deinit() {
+Resolver::~Resolver() {
     /*
      * Como la lista reservada por getaddrinfo() es dinamica requiere
      * una desinicializacion acorde.

@@ -12,12 +12,10 @@
 #include "socket.h"
 #include "resolver.h"
 
-int Socket::init_for_connection(const char *hostname, const char *servicename) {
-    Resolver resolver;
-    int s = resolver.init(hostname, servicename, false);
-    if (s == -1)
-        return -1;
+Socket::Socket(const char *hostname, const char *servicename) {
+    Resolver resolver(hostname, servicename, false);
 
+    int s;
     int skt = -1;
     while (resolver.has_next()) {
         struct addrinfo *addr = resolver.next();
@@ -45,8 +43,7 @@ int Socket::init_for_connection(const char *hostname, const char *servicename) {
 
         // Conexion exitosa!
         this->skt = skt;
-        resolver.deinit();
-        return 0;
+        return;
     }
 
     // Este perror() va a imprimir el ultimo error generado.
@@ -59,16 +56,14 @@ int Socket::init_for_connection(const char *hostname, const char *servicename) {
     // que lo hayamos abierto
     if (skt != -1)
         ::close(skt);
-    resolver.deinit();
-    return -1;
+
+    // TODO lanzar excepcion
 }
 
-int Socket::init_for_listen(const char *servicename) {
-    class Resolver resolver;
-    int s = resolver.init(nullptr, servicename, true);
-    if (s == -1)
-        return -1;
+Socket::Socket(const char *servicename) {
+    Resolver resolver(nullptr, servicename, true);
 
+    int s;
     int skt = -1;
     while (resolver.has_next()) {
         struct addrinfo *addr = resolver.next();
@@ -131,8 +126,7 @@ int Socket::init_for_listen(const char *servicename) {
         // en una de las direcciones obtenidas por getaddrinfo()
         // y esta listo para aceptar conexiones.
         this->skt = skt;
-        resolver.deinit();
-        return 0;
+        return;
     }
 
     // Este perror() va a imprimir el ultimo error generado.
@@ -145,8 +139,14 @@ int Socket::init_for_listen(const char *servicename) {
     // que lo hayamos abierto
     if (skt != -1)
         ::close(skt);
-    resolver.deinit();
-    return -1;
+
+    // TODO lanzar excepcion
+}
+
+// A hack
+Socket::Socket() {
+    this->skt = -1;
+    this->closed = true;
 }
 
 /*
@@ -267,6 +267,12 @@ int Socket::accept(struct Socket *peer) {
     if (skt == -1)
         return -1;
 
+    // Esto es un HACK por que tomamos un objeto
+    // construido y le pisamos cosas internas.
+    //
+    // Lo correcto seria instanciar el Socket peer aca
+    // dentro de Socket::accept y retornarlo pero
+    // para eso necesitamos Move Semantics
     int s = init_with_file_descriptor(peer, skt);
     if (s == -1)
         return -1;
@@ -288,7 +294,7 @@ int Socket::close() {
     return ::close(this->skt);
 }
 
-void Socket::deinit() {
+Socket::~Socket() {
     if (not this->closed) {
         ::shutdown(this->skt, 2);
         ::close(this->skt);
