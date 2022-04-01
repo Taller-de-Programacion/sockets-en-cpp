@@ -52,6 +52,11 @@ class Resolver {
     Resolver(const Resolver&) = delete;
     Resolver& operator=(const Resolver&) = delete;
 
+    /*
+     * Resolver es movible
+     * */
+    Resolver(Resolver&&);
+    Resolver& operator=(Resolver&&);
 };
 
 #endif

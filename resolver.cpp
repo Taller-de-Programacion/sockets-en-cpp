@@ -68,7 +68,56 @@ Resolver::~Resolver() {
      *
      * Podes imaginarte que getaddrinfo() hace un malloc() y que
      * el freeaddrinfo() es su correspondiente free()
+     *
+     * Dado que el Resolver podria haberse movido y perdido el ownership
+     * de la lista, debemos liberarla solo si aun somos responsables
+     * (dueños de ella)
      * */
-    freeaddrinfo(this->result);
+    if (this->result)
+        freeaddrinfo(this->result);
 }
 
+Resolver::Resolver(Resolver&& other) {
+    this->result = other.result;
+    this->next_ = other.next_;
+
+    // Le robamos al otro resolver su lista de direcciones.
+    // A partir de aqui somos nosotros (this) los dueños
+    // de ella.
+    //
+    // Hubo una transferencia de ownership y por lo tanto
+    // debemos hacer que el destructor del otro resolver no
+    // libere los recursos.
+    //
+    // En nuestro caso necesitamos poner results a nullptr
+    // y modificar el destructor ~Resolver para que no lo
+    // libere si es nullptr
+    other.result = other.next_ = nullptr;
+}
+
+Resolver& Resolver::operator=(Resolver&& other) {
+    // Este es un caso borde donde alguien codeo
+    //  resolver = resolver;
+    //
+    // Si alguien quiere "moverse a si mismo" no hacemos nada.
+    if (this == &other)
+        return *this;
+
+    // A diferencia del constructor por movimiento, nosotros
+    // somos un objeto ya construido.
+    // Antes de tomar el ownership del otro resolver debemos
+    // liberar nuestro propio recurso.
+    if (this->result)
+        freeaddrinfo(this->result);
+
+    // A partir de aqui hacemos lo mismo que en el constructor
+    // por movimiento.
+    //
+    // Le robamos el recurso al otro, transferimos el ownership
+    // del recurso del otro resolver hacia el nuestro.
+    this->result = other.result;
+    this->next_ = other.next_;
+
+    other.result = other.next_ = nullptr;
+    return *this;
+}

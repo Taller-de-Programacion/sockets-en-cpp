@@ -115,6 +115,12 @@ class Socket {
      * */
     Socket(const Socket&) = delete;
     Socket& operator=(const Socket&) = delete;
+
+    /*
+     * Socket es movible
+     * */
+    Socket(Socket&&);
+    Socket& operator=(Socket&&);
 };
 
 #endif

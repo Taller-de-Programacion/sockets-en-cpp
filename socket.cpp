@@ -300,3 +300,51 @@ Socket::~Socket() {
         ::close(this->skt);
     }
 }
+
+Socket::Socket(Socket&& other) {
+    this->skt = other.skt;
+    this->closed = other.closed;
+
+    // Le robamos al otro socket su file descriptor.
+    // A partir de aqui somos nosotros (this) los dueños
+    // del recurso.
+    //
+    // Hubo una transferencia de ownership y por lo tanto
+    // debemos hacer que el destructor del otro socket no
+    // libere los recursos.
+    //
+    // Para Socket con esto alcanza (mirate Resolver)
+    other.skt = -1;
+    other.closed = true;
+}
+
+Socket& Socket::operator=(Socket&& other) {
+    // Este es un caso borde donde alguien codeo
+    //  skt = skt;
+    //
+    // Si alguien quiere "moverse a si mismo" no hacemos nada.
+    if (this == &other)
+        return *this;
+
+    // A diferencia del constructor por movimiento, nosotros
+    // somos un objeto ya construido.
+    // Antes de tomar el ownershipt del otro socket debemos
+    // liberar nuestro propio recurso.
+    if (not this->closed) {
+        ::shutdown(this->skt, 2);
+        ::close(this->skt);
+    }
+
+    // A partir de aqui hacemos lo mismo que en el constructor
+    // por movimiento.
+    //
+    // Le robamos el recurso al otro, transferimos el ownership
+    // del recurso del otro socket hacia el nuestro.
+    this->skt = other.skt;
+    this->closed = other.closed;
+
+    other.skt = -1;
+    other.closed = true;
+
+    return *this;
+}
