@@ -6,17 +6,17 @@
  * Por simplificacion este TDA se enfocara solamente
  * en sockets IPv4 para TCP.
  * */
-class socket_t {
+class Socket {
     int skt;
     bool closed;
 
-    int init_with_file_descriptor(struct socket_t *self, int skt);
+    int init_with_file_descriptor(Socket *self, int skt);
 
     public:
     /*
      * Inicializamos el socket tanto para conectarse a un servidor
-     * (socket_t::init_for_connection) como para inicializarlo para ser usado
-     * por un servidor (socket_t::init_for_listen).
+     * (Socket::init_for_connection) como para inicializarlo para ser usado
+     * por un servidor (Socket::init_for_listen).
      *
      * Muchas librerias de muchos lenguajes ofrecen una unica formal de inicializar
      * los sockets y luego metodos (post-inicializacion) para establer
@@ -33,10 +33,10 @@ class socket_t {
     int init_for_connection(const char *hostname, const char *servicename);
     int init_for_listen(const char *servicename);
 
-    /* socket_t::sendsome() lee hasta sz bytes del buffer y los envia. La funcion
+    /* Socket::sendsome() lee hasta sz bytes del buffer y los envia. La funcion
      * puede enviar menos bytes sin embargo.
      *
-     * socket_t::recvsome() por el otro lado recibe hasta sz bytes y los escribe
+     * Socket::recvsome() por el otro lado recibe hasta sz bytes y los escribe
      * en el buffer (que debe estar pre-allocado). La funcion puede recibir
      * menos bytes sin embargo.
      *
@@ -52,8 +52,8 @@ class socket_t {
     int recvsome(void *data, unsigned int sz, bool *was_closed);
 
     /*
-     * socket_t::sendall() envia exactamente sz bytes leidos del buffer, ni mas,
-     * ni menos. socket_t::recvall() recibe exactamente sz bytes.
+     * Socket::sendall() envia exactamente sz bytes leidos del buffer, ni mas,
+     * ni menos. Socket::recvall() recibe exactamente sz bytes.
      *
      * Si hay un error o el socket se cerro durante el envio/recibo de los bytes
      * no hay forma certera de saber cuantos bytes realmente se enviaron/recibieron.
@@ -69,12 +69,12 @@ class socket_t {
 
     /*
      * Acepta una conexion entrante e inicializa con ella el socket peer.
-     * Dicho socket peer debe estar *sin* inicializar y si socket_t::accept() es
-     * exitoso, se debe llamar a socket_t::deinit() sobre él.
+     * Dicho socket peer debe estar *sin* inicializar y si Socket::accept() es
+     * exitoso, se debe llamar a Socket::deinit() sobre él.
      *
      * Retorna -1 en caso de error, 0 de otro modo.
      * */
-    int accept(struct socket_t *peer);
+    int accept(struct Socket *peer);
 
     /*
      * Cierra la conexion ya sea parcial o completamente.
@@ -90,7 +90,7 @@ class socket_t {
 
     /*
      * Desinicializa el socket. Si aun esta conectado,
-     * se llamara a socket_t::shutdown() y socket_t::close()
+     * se llamara a Socket::shutdown() y Socket::close()
      * automaticamente.
      * */
     void deinit();

@@ -50,7 +50,7 @@ int main() {
      * fallo y por lo tanto una desinicializacion podria terminar
      * en liberar recursos que no fueron reservados en primer lugar
      * */
-    class socket_t skt;
+    Socket skt;
     s = skt.init_for_connection("www.google.com.ar", "http");
     if (s == -1)
         goto connection_failed;

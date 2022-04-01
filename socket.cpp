@@ -12,8 +12,8 @@
 #include "socket.h"
 #include "resolver.h"
 
-int socket_t::init_for_connection(const char *hostname, const char *servicename) {
-    class resolver_t resolver;
+int Socket::init_for_connection(const char *hostname, const char *servicename) {
+    Resolver resolver;
     int s = resolver.init(hostname, servicename, false);
     if (s == -1)
         return -1;
@@ -63,8 +63,8 @@ int socket_t::init_for_connection(const char *hostname, const char *servicename)
     return -1;
 }
 
-int socket_t::init_for_listen(const char *servicename) {
-    class resolver_t resolver;
+int Socket::init_for_listen(const char *servicename) {
+    class Resolver resolver;
     int s = resolver.init(nullptr, servicename, true);
     if (s == -1)
         return -1;
@@ -153,18 +153,18 @@ int socket_t::init_for_listen(const char *servicename) {
  * Inicializa el socket pasandole directamente el file descriptor.
  *
  * No queremos que el codigo del usuario este manipulando el file descriptor,
- * queremos q interactue con él *solo* a traves de socket_t.
+ * queremos q interactue con él *solo* a traves de Socket.
  *
  * Por ello ponemos este metodo privado (vease socket.h).
  * */
-int socket_t::init_with_file_descriptor(struct socket_t *self, int skt) {
+int Socket::init_with_file_descriptor(Socket *self, int skt) {
     self->skt = skt;
     self->closed = false;
 
     return 0;
 }
 
-int socket_t::recvsome(void *data, unsigned int sz, bool *was_closed) {
+int Socket::recvsome(void *data, unsigned int sz, bool *was_closed) {
     *was_closed = false;
     int s = recv(this->skt, (char*)data, sz, 0);
     if (s == 0) {
@@ -183,7 +183,7 @@ int socket_t::recvsome(void *data, unsigned int sz, bool *was_closed) {
     }
 }
 
-int socket_t::sendsome(const void *data, unsigned int sz, bool *was_closed) {
+int Socket::sendsome(const void *data, unsigned int sz, bool *was_closed) {
     *was_closed = false;
     int s = send(this->skt, (char*)data, sz, MSG_NOSIGNAL);
     if (s == 0) {
@@ -214,7 +214,7 @@ int socket_t::sendsome(const void *data, unsigned int sz, bool *was_closed) {
     }
 }
 
-int socket_t::recvall(void *data, unsigned int sz, bool *was_closed) {
+int Socket::recvall(void *data, unsigned int sz, bool *was_closed) {
     unsigned int received = 0;
     *was_closed = false;
 
@@ -222,10 +222,10 @@ int socket_t::recvall(void *data, unsigned int sz, bool *was_closed) {
         int s = this->recvsome((char*)data + received, sz - received, was_closed);
         if (s <= 0) {
             // Si el socket fue cerrado (s == 0) o hubo un error (s < 0)
-            // el metodo socket_t::recvsome ya deberia haber seteado was_closed
+            // el metodo Socket::recvsome ya deberia haber seteado was_closed
             // y haber notificado el error.
             // Nosotros podemos entonces meramente retornar.
-            // (si no llamaramos a socket_t::recvsome() y llamaramos a recv()
+            // (si no llamaramos a Socket::recvsome() y llamaramos a recv()
             // deberiamos entonces checkear los errores y no solo retornarlos)
             return s;
         }
@@ -240,7 +240,7 @@ int socket_t::recvall(void *data, unsigned int sz, bool *was_closed) {
 }
 
 
-int socket_t::sendall(const void *data, unsigned int sz, bool *was_closed) {
+int Socket::sendall(const void *data, unsigned int sz, bool *was_closed) {
     unsigned int sent = 0;
     *was_closed = false;
 
@@ -248,10 +248,10 @@ int socket_t::sendall(const void *data, unsigned int sz, bool *was_closed) {
         int s = this->sendsome((char*)data + sent, sz - sent, was_closed);
         if (s <= 0) {
             // Si el socket fue cerrado (s == 0) o hubo un error (s < 0)
-            // el metodo socket_t::sendall ya deberia haber seteado was_closed
+            // el metodo Socket::sendall ya deberia haber seteado was_closed
             // y haber notificado el error.
             // Nosotros podemos entonces meramente retornar.
-            // (si no llamaramos a socket_t::sendsome() y llamaramos a send()
+            // (si no llamaramos a Socket::sendsome() y llamaramos a send()
             // deberiamos entonces checkear los errores y no solo retornarlos)
             return s;
         } else {
@@ -262,7 +262,7 @@ int socket_t::sendall(const void *data, unsigned int sz, bool *was_closed) {
     return sz;
 }
 
-int socket_t::accept(struct socket_t *peer) {
+int Socket::accept(struct Socket *peer) {
     int skt = ::accept(this->skt, nullptr, nullptr);
     if (skt == -1)
         return -1;
@@ -274,7 +274,7 @@ int socket_t::accept(struct socket_t *peer) {
     return 0;
 }
 
-int socket_t::shutdown(int how) {
+int Socket::shutdown(int how) {
     if (::shutdown(this->skt, how) == -1) {
         perror("socket shutdown failed");
         return -1;
@@ -283,12 +283,12 @@ int socket_t::shutdown(int how) {
     return 0;
 }
 
-int socket_t::close() {
+int Socket::close() {
     this->closed = true;
     return ::close(this->skt);
 }
 
-void socket_t::deinit() {
+void Socket::deinit() {
     if (not this->closed) {
         ::shutdown(this->skt, 2);
         ::close(this->skt);

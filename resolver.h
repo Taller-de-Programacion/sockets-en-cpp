@@ -8,7 +8,7 @@ struct addrinfo;
  * Por simplificacion este TDA se enfocara solamente
  * en direcciones IPv4 para TCP.
  * */
-class resolver_t {
+class Resolver {
     struct addrinfo *result;
     struct addrinfo *next_;
 
@@ -23,7 +23,7 @@ class resolver_t {
 
 
     /* Retorna si hay o no una direccion siguiente para testear.
-     * Si la hay, se debera llamar a resolver_t::next() para obtenerla.
+     * Si la hay, se debera llamar a Resolver::next() para obtenerla.
      *
      * Si no la hay se puede asumir que el resolver esta extinguido.
      * */
