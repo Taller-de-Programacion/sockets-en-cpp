@@ -51,7 +51,7 @@ int main() {
      * en liberar recursos que no fueron reservados en primer lugar
      * */
     struct socket_t skt;
-    s = skt.socket_init_for_connection("www.google.com.ar", "http");
+    s = skt.init_for_connection("www.google.com.ar", "http");
     if (s == -1)
         goto connection_failed;
 
@@ -67,7 +67,7 @@ int main() {
      * aunque el send()/recv() fallen, los recursos *si* fueron reservados
      * por nosotros.
      * */
-    s = skt.socket_sendall(req, sizeof(req) - 1, &was_closed);
+    s = skt.sendall(req, sizeof(req) - 1, &was_closed);
     if (s != sizeof(req) - 1)
         goto send_req_failed;
 
@@ -81,7 +81,7 @@ int main() {
      * */
     char buf[512];
     while (not was_closed) {
-        int r = skt.socket_recvsome(buf, sizeof(buf) - 1, &was_closed);
+        int r = skt.recvsome(buf, sizeof(buf) - 1, &was_closed);
         if (was_closed)
             break;
 
@@ -101,9 +101,9 @@ int main() {
 
 recv_failed:
 send_req_failed:
-    skt.socket_shutdown(2);
-    skt.socket_close();
-    skt.socket_deinit();
+    skt.shutdown(2);
+    skt.close();
+    skt.deinit();
 
 connection_failed:
     return ret;

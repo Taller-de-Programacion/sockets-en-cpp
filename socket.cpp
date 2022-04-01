@@ -12,21 +12,21 @@
 #include "socket.h"
 #include "resolver.h"
 
-int socket_t::socket_init_for_connection(const char *hostname, const char *servicename) {
+int socket_t::init_for_connection(const char *hostname, const char *servicename) {
     struct resolver_t resolver;
-    int s = resolver.resolver_init(hostname, servicename, false);
+    int s = resolver.init(hostname, servicename, false);
     if (s == -1)
         return -1;
 
     int skt = -1;
-    while (resolver.resolver_has_next()) {
-        struct addrinfo *addr = resolver.resolver_next();
+    while (resolver.has_next()) {
+        struct addrinfo *addr = resolver.next();
 
         /* Cerramos el socket si nos quedo abierto de la iteracion
          * anterior
          * */
         if (skt != -1)
-            close(skt);
+            ::close(skt);
 
         /* Creamos el socket definiendo la familia (deberia ser AF_INET IPv4),
            el tipo de socket (deberia ser SOCK_STREAM TCP) y el protocolo (0) */
@@ -45,7 +45,7 @@ int socket_t::socket_init_for_connection(const char *hostname, const char *servi
 
         // Conexion exitosa!
         this->skt = skt;
-        resolver.resolver_deinit();
+        resolver.deinit();
         return 0;
     }
 
@@ -58,26 +58,26 @@ int socket_t::socket_init_for_connection(const char *hostname, const char *servi
     // No hay q olvidarse de cerrar el socket en caso de
     // que lo hayamos abierto
     if (skt != -1)
-        close(skt);
-    resolver.resolver_deinit();
+        ::close(skt);
+    resolver.deinit();
     return -1;
 }
 
-int socket_t::socket_init_for_listen(const char *servicename) {
+int socket_t::init_for_listen(const char *servicename) {
     struct resolver_t resolver;
-    int s = resolver.resolver_init(nullptr, servicename, true);
+    int s = resolver.init(nullptr, servicename, true);
     if (s == -1)
         return -1;
 
     int skt = -1;
-    while (resolver.resolver_has_next()) {
-        struct addrinfo *addr = resolver.resolver_next();
+    while (resolver.has_next()) {
+        struct addrinfo *addr = resolver.next();
 
         /* Cerramos el socket si nos quedo abierto de la iteracion
          * anterior
          * */
         if (skt != -1)
-            close(skt);
+            ::close(skt);
 
         /* Creamos el socket definiendo la misma familia, tipo y protocolo
          * que tiene la direccion que estamos por probar.
@@ -131,7 +131,7 @@ int socket_t::socket_init_for_listen(const char *servicename) {
         // en una de las direcciones obtenidas por getaddrinfo()
         // y esta listo para aceptar conexiones.
         this->skt = skt;
-        resolver.resolver_deinit();
+        resolver.deinit();
         return 0;
     }
 
@@ -144,8 +144,8 @@ int socket_t::socket_init_for_listen(const char *servicename) {
     // No hay q olvidarse de cerrar el socket en caso de
     // que lo hayamos abierto
     if (skt != -1)
-        close(skt);
-    resolver.resolver_deinit();
+        ::close(skt);
+    resolver.deinit();
     return -1;
 }
 
@@ -165,7 +165,7 @@ int _socket_init_with_file_descriptor(struct socket_t *self, int skt) {
     return 0;
 }
 
-int socket_t::socket_recvsome(void *data, unsigned int sz, bool *was_closed) {
+int socket_t::recvsome(void *data, unsigned int sz, bool *was_closed) {
     *was_closed = false;
     int s = recv(this->skt, (char*)data, sz, 0);
     if (s == 0) {
@@ -184,7 +184,7 @@ int socket_t::socket_recvsome(void *data, unsigned int sz, bool *was_closed) {
     }
 }
 
-int socket_t::socket_sendsome(const void *data, unsigned int sz, bool *was_closed) {
+int socket_t::sendsome(const void *data, unsigned int sz, bool *was_closed) {
     *was_closed = false;
     int s = send(this->skt, (char*)data, sz, MSG_NOSIGNAL);
     if (s == 0) {
@@ -215,18 +215,18 @@ int socket_t::socket_sendsome(const void *data, unsigned int sz, bool *was_close
     }
 }
 
-int socket_t::socket_recvall(void *data, unsigned int sz, bool *was_closed) {
+int socket_t::recvall(void *data, unsigned int sz, bool *was_closed) {
     unsigned int received = 0;
     *was_closed = false;
 
     while (received < sz) {
-        int s = this->socket_recvsome((char*)data + received, sz - received, was_closed);
+        int s = this->recvsome((char*)data + received, sz - received, was_closed);
         if (s <= 0) {
             // Si el socket fue cerrado (s == 0) o hubo un error (s < 0)
-            // el metodo socket_recvsome ya deberia haber seteado was_closed
+            // el metodo socket_t::recvsome ya deberia haber seteado was_closed
             // y haber notificado el error.
             // Nosotros podemos entonces meramente retornar.
-            // (si no llamaramos a socket_recvsome() y llamaramos a recv()
+            // (si no llamaramos a socket_t::recvsome() y llamaramos a recv()
             // deberiamos entonces checkear los errores y no solo retornarlos)
             return s;
         }
@@ -241,18 +241,18 @@ int socket_t::socket_recvall(void *data, unsigned int sz, bool *was_closed) {
 }
 
 
-int socket_t::socket_sendall(const void *data, unsigned int sz, bool *was_closed) {
+int socket_t::sendall(const void *data, unsigned int sz, bool *was_closed) {
     unsigned int sent = 0;
     *was_closed = false;
 
     while (sent < sz) {
-        int s = this->socket_sendsome((char*)data + sent, sz - sent, was_closed);
+        int s = this->sendsome((char*)data + sent, sz - sent, was_closed);
         if (s <= 0) {
             // Si el socket fue cerrado (s == 0) o hubo un error (s < 0)
-            // el metodo socket_sendall ya deberia haber seteado was_closed
+            // el metodo socket_t::sendall ya deberia haber seteado was_closed
             // y haber notificado el error.
             // Nosotros podemos entonces meramente retornar.
-            // (si no llamaramos a socket_sendsome() y llamaramos a send()
+            // (si no llamaramos a socket_t::sendsome() y llamaramos a send()
             // deberiamos entonces checkear los errores y no solo retornarlos)
             return s;
         } else {
@@ -263,8 +263,8 @@ int socket_t::socket_sendall(const void *data, unsigned int sz, bool *was_closed
     return sz;
 }
 
-int socket_t::socket_accept(struct socket_t *peer) {
-    int skt = accept(this->skt, nullptr, nullptr);
+int socket_t::accept(struct socket_t *peer) {
+    int skt = ::accept(this->skt, nullptr, nullptr);
     if (skt == -1)
         return -1;
 
@@ -275,8 +275,8 @@ int socket_t::socket_accept(struct socket_t *peer) {
     return 0;
 }
 
-int socket_t::socket_shutdown(int how) {
-    if (shutdown(this->skt, how) == -1) {
+int socket_t::shutdown(int how) {
+    if (::shutdown(this->skt, how) == -1) {
         perror("socket shutdown failed");
         return -1;
     }
@@ -284,14 +284,14 @@ int socket_t::socket_shutdown(int how) {
     return 0;
 }
 
-int socket_t::socket_close() {
+int socket_t::close() {
     this->closed = true;
-    return close(this->skt);
+    return ::close(this->skt);
 }
 
-void socket_t::socket_deinit() {
+void socket_t::deinit() {
     if (not this->closed) {
-        shutdown(this->skt, 2);
-        close(this->skt);
+        ::shutdown(this->skt, 2);
+        ::close(this->skt);
     }
 }
