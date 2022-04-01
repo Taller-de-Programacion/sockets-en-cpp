@@ -6,8 +6,7 @@
  * Por simplificacion este TDA se enfocara solamente
  * en sockets IPv4 para TCP.
  * */
-struct socket_t {
-    private:
+class socket_t {
     int skt;
     bool closed;
 

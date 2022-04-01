@@ -8,8 +8,7 @@ struct addrinfo;
  * Por simplificacion este TDA se enfocara solamente
  * en direcciones IPv4 para TCP.
  * */
-struct resolver_t {
-    private:
+class resolver_t {
     struct addrinfo *result;
     struct addrinfo *next_;
 

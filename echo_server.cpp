@@ -46,7 +46,7 @@ int main() {
      * En general es una mala idea hardcodear IPs/puertos, aca esta
      * con fines didacticos.
      * */
-    struct socket_t peer, srv;
+    class socket_t peer, srv;
     s = srv.init_for_listen("3129");
     if (s == -1)
         goto listening_failed;

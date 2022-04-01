@@ -13,7 +13,7 @@
 #include "resolver.h"
 
 int socket_t::init_for_connection(const char *hostname, const char *servicename) {
-    struct resolver_t resolver;
+    class resolver_t resolver;
     int s = resolver.init(hostname, servicename, false);
     if (s == -1)
         return -1;
@@ -64,7 +64,7 @@ int socket_t::init_for_connection(const char *hostname, const char *servicename)
 }
 
 int socket_t::init_for_listen(const char *servicename) {
-    struct resolver_t resolver;
+    class resolver_t resolver;
     int s = resolver.init(nullptr, servicename, true);
     if (s == -1)
         return -1;
