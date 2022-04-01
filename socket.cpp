@@ -155,10 +155,9 @@ int socket_t::init_for_listen(const char *servicename) {
  * No queremos que el codigo del usuario este manipulando el file descriptor,
  * queremos q interactue con él *solo* a traves de socket_t.
  *
- * Por ello ponemos esta funcion privada (static).
+ * Por ello ponemos este metodo privado (vease socket.h).
  * */
-static
-int _socket_init_with_file_descriptor(struct socket_t *self, int skt) {
+int socket_t::init_with_file_descriptor(struct socket_t *self, int skt) {
     self->skt = skt;
     self->closed = false;
 
@@ -268,7 +267,7 @@ int socket_t::accept(struct socket_t *peer) {
     if (skt == -1)
         return -1;
 
-    int s = _socket_init_with_file_descriptor(peer, skt);
+    int s = init_with_file_descriptor(peer, skt);
     if (s == -1)
         return -1;
 

@@ -9,9 +9,11 @@ struct addrinfo;
  * en direcciones IPv4 para TCP.
  * */
 struct resolver_t {
-    struct addrinfo *result; // privado, no accedas a este atributo
-    struct addrinfo *next_; // privado, no accedas a este atributo
+    private:
+    struct addrinfo *result;
+    struct addrinfo *next_;
 
+    public:
     /* Inicializa la estructura y resuelve el dado nombre del host y servicio.
      * Si passive es True, la resolucion se hace pensando que se quiere
      * inicializar un socket pasivo, de otro modo sera para un socket activo.

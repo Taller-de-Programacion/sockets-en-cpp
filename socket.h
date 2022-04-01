@@ -7,9 +7,13 @@
  * en sockets IPv4 para TCP.
  * */
 struct socket_t {
-    int skt; // privado, no accedas a este atributo
-    bool closed; // privado, no accedas a este atributo
+    private:
+    int skt;
+    bool closed;
 
+    int init_with_file_descriptor(struct socket_t *self, int skt);
+
+    public:
     /*
      * Inicializamos el socket tanto para conectarse a un servidor
      * (socket_t::init_for_connection) como para inicializarlo para ser usado
