@@ -41,6 +41,17 @@ class Resolver {
      * */
     ~Resolver();
 
+    /*
+     * Es poco probable que alguien quiera realmente copiar un resolver.
+     * Es mas probable que alguien copie uno "sin querer" ya que en C++
+     * el default es pasaje por copia.
+     *
+     * Lo mas saludable es prohibir la copia asi el compilador puede
+     * darse cuenta de una copia no desada.
+     * */
+    Resolver(const Resolver&) = delete;
+    Resolver& operator=(const Resolver&) = delete;
+
 };
 
 #endif

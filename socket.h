@@ -103,6 +103,18 @@ class Socket {
      * */
     ~Socket();
 
+    /*
+     * Copiar un Socket carece de todo sentido. Como lo copiarias?
+     * Estarian conectados al mismo server? Que pasaria del lado del server
+     * si ahora su cliente tiene 2 sockets hacia él?
+     *
+     * Simplemente no tiene sentido.
+     *
+     * Ya que C++ nos crea por default el constructor y el operador asignacion
+     * por copia, lo unico razonable es prohibir los.
+     * */
+    Socket(const Socket&) = delete;
+    Socket& operator=(const Socket&) = delete;
 };
 
 #endif
