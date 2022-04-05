@@ -51,8 +51,6 @@ int main() {
      * en liberar recursos que no fueron reservados en primer lugar
      * */
     Socket skt("www.google.com.ar", "http");
-    if (s == -1)
-        goto connection_failed;
 
     /*
      * Enviamos el HTTP Request, el pedido de pagina web. Como sabemos
@@ -104,6 +102,5 @@ int main() {
     // las cosas. Este es el poder de RAII (Resource Acquisition is Initialization)
 recv_failed:
 send_req_failed:
-connection_failed:
     return ret;
 }
