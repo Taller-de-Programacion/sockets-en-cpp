@@ -12,7 +12,7 @@
 #include "socket.h"
 #include "resolver.h"
 
-Socket::Socket(const char *hostname, const char *servicename) {
+Socket::Socket(const char *hostname, const char *servicename) : skt(-1), closed(true) {
     Resolver resolver(hostname, servicename, false);
 
     int s;
@@ -43,6 +43,7 @@ Socket::Socket(const char *hostname, const char *servicename) {
 
         // Conexion exitosa!
         this->skt = skt;
+        this->closed = false;
         return;
     }
 
@@ -60,7 +61,7 @@ Socket::Socket(const char *hostname, const char *servicename) {
     // TODO lanzar excepcion
 }
 
-Socket::Socket(const char *servicename) {
+Socket::Socket(const char *servicename) : skt(-1), closed(true) {
     Resolver resolver(nullptr, servicename, true);
 
     int s;
@@ -126,6 +127,7 @@ Socket::Socket(const char *servicename) {
         // en una de las direcciones obtenidas por getaddrinfo()
         // y esta listo para aceptar conexiones.
         this->skt = skt;
+        this->closed = false;
         return;
     }
 
@@ -151,9 +153,7 @@ Socket::Socket(const char *servicename) {
  *
  * Por ello ponemos este constructor privado (vease socket.h).
  * */
-Socket::Socket(int skt) {
-    this->skt = skt;
-    this->closed = false;
+Socket::Socket(int skt) : skt(skt), closed(false) {
 }
 
 int Socket::recvsome(void *data, unsigned int sz, bool *was_closed) {
