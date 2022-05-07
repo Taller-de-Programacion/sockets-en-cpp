@@ -11,6 +11,9 @@
 #include <netdb.h>
 #include <unistd.h>
 
+#include "liberror.h"
+#include "resolvererror.h"
+
 Resolver::Resolver(const char* hostname, const char* servicename, bool passive) {
     struct addrinfo hints;
     this->result = this->next_ = nullptr;
@@ -40,12 +43,31 @@ Resolver::Resolver(const char* hostname, const char* servicename, bool passive) 
     int s = getaddrinfo(hostname, servicename, &hints, &this->result);
 
     /* Es muy importante chequear los errores.
-     * En caso de uno, usar gai_strerror para traducir el codigo de error (s)
+     *
+     * En C, Golang, Rust, la forma de comunicar errores al caller (a quien
+     * nos llamó) es retornando un código de error.
+     * En C++, Java, Python, la forma es lanzando una excepcion.
+     *
+     * En nuestro caso, ResolverError sera quien
+     * use gai_strerror para traducir el codigo de error (s)
      * a un mensaje humanamente entendible.
+     *
+     * La pagina de manual de getaddrinfo() aclara que si s == EAI_SYSTEM
+     * entonces el error es del sistema y deberemos inspeccionar
+     * la variable global errno.
+     *
+     * Como errno es global y puede ser modificada por *cualquier* otra
+     * funcion, es *importantisimo* copiarla apenas detectemos el error
+     * De otro modo nos arriesgamos a que alguien nos pise la variable
+     * errno y perdamos realmente el codigo del error.
+     *
+     * Para el caso de errno voy a usar otra excepcion: LibError.
      * */
     if (s != 0) {
-        printf("Error in getaddrinfo: %s\n", gai_strerror(s));
-        return ;  // TODO lanzar una excepcion
+        if (s == EAI_SYSTEM)
+            throw LibError(errno, "Resolver failed: ");
+        else
+            throw ResolverError(s);
     }
 
     this->next_ = this->result;
@@ -121,3 +143,4 @@ Resolver& Resolver::operator=(Resolver&& other) {
     other.result = other.next_ = nullptr;
     return *this;
 }
+
