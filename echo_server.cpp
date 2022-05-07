@@ -1,6 +1,7 @@
 #include <iostream>
 #include "socket.h"
 
+#include <exception>
 /*
  * Este mini ejemplo escucha en el puerto 3129 TCP y acepta a un unico
  * cliente. Todo lo que el cliente envie el servidor se lo reenviara.
@@ -24,7 +25,7 @@
  *  nc 127.0.0.1 3129
  *
  **/
-int main() {
+int main() try {
     int ret = -1;
     bool was_closed = false;
 
@@ -103,4 +104,10 @@ int main() {
     // Esto sucede incluso si se lanzo una excepcion.
     // Este es el poder de RAII (Resource Acquisition is Initialization)
     return ret;
+} catch (const std::exception& err) {
+    std::cerr << "Something went wrong and an exception was caught: " << err.what() << "\n";
+    return -1;
+} catch (...) {
+    std::cerr << "Something went wrong and an unknown exception was caught.\n";
+    return -1;
 }

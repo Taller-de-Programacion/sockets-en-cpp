@@ -1,9 +1,11 @@
 #include <iostream>
 #include "socket.h"
 #include "resolvererror.h"
+#include "liberror.h"
 
 #include <chrono>
 #include <thread>
+#include <exception>
 
 /*
  * Este mini ejemplo se conecta via TCP a www.google.com.ar y se descarga una
@@ -37,7 +39,7 @@
  * En Golang podras usar los "defer" para mitigar el problema. En C++ y en Rust
  * tendras RAII para resolverlo completamente (RAII = Resource Acquisition is Initialization)
  * */
-int main() {
+int main() try {
     int ret = -1;
     bool was_closed = false;
 
@@ -117,4 +119,29 @@ int main() {
     // Esto sucede incluso si se lanzo una excepcion.
     // Este es el poder de RAII (Resource Acquisition is Initialization)
     return ret;
+} catch (const std::exception& err) {
+    // Si una excepcion se escapa por fuera de main() o por fuera del main de un
+    // thread, el programa aborta lo cual no es bonito.
+    // Lo mas prolijo es logguear que excepcion sucedio y finalizar
+    // con un codigo de error.
+    // En este caso estoy usando stderr pero tal vez algo mas profesional
+    // seria usar algun sistema de logging como syslog.
+    std::cerr << "Something went wrong and an exception was caught: " << err.what() << "\n";
+    return -1;
+} catch (...) {
+    // En C++ no hay restriccion en que es una excepcion: uno puede lanzar
+    // cualquier cosa incluso primitivos como ints.
+    // Lanzar algo que herede de std::exception es opcional pero altamente
+    // recomendable ya que uno puede atrapar la excepcion e invocar what()
+    // para obtener un mensaje descriptivo.
+    //
+    // Aun asi es importante considerar el caso en que la excepcion sea de un
+    // tipo que no sabemos, incluyendo uno primitivo.
+    //
+    // Para atrapar dichas excepciones se usa elipsis (...).
+    //
+    // Dado que no sabemes de que excepcion se trata loggueamos un mensaje
+    // generico.
+    std::cerr << "Something went wrong and an unknown exception was caught.\n";
+    return -1;
 }
