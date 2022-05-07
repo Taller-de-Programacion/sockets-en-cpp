@@ -32,7 +32,15 @@ class LibError : public std::exception {
      *  */
     LibError(int error_code, const char* fmt, ...) noexcept;
 
-    const char* what() noexcept;
+    virtual const char* what() const noexcept;
+
+    // Por que estamos heredando y usando polimorfismo
+    // es importantisimo definir un destructor virtual
+    // Estrictamente hablando basta con poner virtual al
+    // destructor de la clase padre (std::exception) pero
+    // GCC requiere de la definicion de los destructores
+    // de las clases hijas para que pueda colocar la VTable.
+    virtual ~LibError();
 };
 
 #endif

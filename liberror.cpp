@@ -95,3 +95,9 @@ LibError::LibError(int error_code, const char* fmt, ...) noexcept : error_code(e
      * */
     msg_error[sizeof(msg_error)-1] = 0;
 }
+
+const char* LibError::what() const noexcept {
+    return msg_error;
+}
+
+LibError::~LibError() {}
