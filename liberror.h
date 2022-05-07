@@ -13,6 +13,9 @@ class LibError : public std::exception {
 
     public:
 
+    // Make this public but constant.
+    const int error_code;
+
     /*
      * Dado que errno es una variable global y puede ser modificada por
      * cualquier funcion, hay que hacer una copia apenas se haya detectado

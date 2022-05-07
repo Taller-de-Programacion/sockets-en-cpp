@@ -5,7 +5,7 @@
 
 #include "liberror.h"
 
-LibError::LibError(int error_code, const char* fmt, ...) noexcept {
+LibError::LibError(int error_code, const char* fmt, ...) noexcept : error_code(error_code) {
     /* Aqui empieza la magia arcana proveniente de C.
      *
      * En C (y en C++) las funciones y metodos pueden recibir un numero

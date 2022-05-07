@@ -216,7 +216,7 @@ int Socket::recvall(void *data, unsigned int sz, bool *was_closed) {
     unsigned int received = 0;
     *was_closed = false;
 
-    while (received < sz) {
+    while (received < sz) try {
         int s = this->recvsome((char*)data + received, sz - received, was_closed);
         if (s == 0) {
             // Si el socket fue cerrado (s == 0) pero es claro que no logramos
@@ -234,6 +234,8 @@ int Socket::recvall(void *data, unsigned int sz, bool *was_closed) {
             // esperamos. La condicion del while checkea eso justamente
             received += s;
         }
+    } catch (const LibError& err) {
+        throw LibError(err.error_code, "Socket recvall failed (len %d/%d): ", received, sz);
     }
 
     return sz;
@@ -244,7 +246,7 @@ int Socket::sendall(const void *data, unsigned int sz, bool *was_closed) {
     unsigned int sent = 0;
     *was_closed = false;
 
-    while (sent < sz) {
+    while (sent < sz) try {
         int s = this->sendsome((char*)data + sent, sz - sent, was_closed);
         if (s == 0) {
             // Si el socket fue cerrado (s == 0) pero es claro que no logramos
@@ -259,6 +261,8 @@ int Socket::sendall(const void *data, unsigned int sz, bool *was_closed) {
         } else {
             sent += s;
         }
+    } catch (const LibError& err) {
+        throw LibError(err.error_code, "Socket sendall failed (len %d/%d): ", sent, sz);
     }
 
     return sz;
