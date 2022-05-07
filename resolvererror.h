@@ -13,5 +13,7 @@ class ResolverError : public std::exception {
     ResolverError(int gai_errno);
 
     const char* what() noexcept;
+
+    bool is_temporal_failure() const noexcept;
 };
 #endif

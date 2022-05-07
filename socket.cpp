@@ -164,6 +164,8 @@ Socket::Socket(const char *servicename) : skt(-1), closed(true) {
 Socket::Socket(int skt) : skt(skt), closed(false) {
 }
 
+Socket::Socket() : skt(-1), closed(true) {}
+
 int Socket::recvsome(void *data, unsigned int sz, bool *was_closed) {
     *was_closed = false;
     int s = recv(this->skt, (char*)data, sz, 0);

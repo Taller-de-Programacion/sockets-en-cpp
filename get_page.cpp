@@ -1,5 +1,9 @@
 #include <iostream>
 #include "socket.h"
+#include "resolvererror.h"
+
+#include <chrono>
+#include <thread>
 
 /*
  * Este mini ejemplo se conecta via TCP a www.google.com.ar y se descarga una
@@ -47,8 +51,30 @@ int main() {
      * Al ser Socket RAII y estar instanciado en el stack su destructor
      * no se llamara si se lanza una excepcion dentro del destructor
      * (asi no liberaremos los recursos que no fueron reservados)
+     *
+     * En el caso de un error de resolucion temporal hacemos un pequeño retry.
+     * Es una excusa para practicar try/catch y move semantics.
      * */
-    Socket skt("www.google.com.ar", "http");
+    int retries = 3;
+    Socket skt;
+    while (true) try {
+        Socket tmp("www.google.com.ar", "http");
+
+        // Move semantics: movemos el socket del scope del try/catch (tmp)
+        // afuera, al scope del main (skt).
+        skt = std::move(tmp);
+        break;
+    } catch (const ResolverError& err) {
+        --retries;
+        // Si el error no es temporal o se agotaron los intentos, continuamos
+        // propagando al excepcion.
+        // La instruccion throw sin argumentos hace que la excepcion actual (err)
+        // continue (no estamos lanzando otra excepcion)
+        if (not err.is_temporal_failure() or retries < 0)
+            throw;
+
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
 
     /*
      * Enviamos el HTTP Request, el pedido de pagina web. Como sabemos
