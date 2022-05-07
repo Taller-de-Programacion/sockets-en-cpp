@@ -75,7 +75,7 @@ class Socket {
      * Cierra la conexion ya sea parcial o completamente.
      * Lease man 2 shutdown
      * */
-    int shutdown(int how);
+    void shutdown(int how);
 
     /*
      * Cierra el socket. El cierre no implica un shutdown

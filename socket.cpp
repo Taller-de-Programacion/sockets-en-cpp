@@ -9,8 +9,11 @@
 #include <netdb.h>
 #include <unistd.h>
 
+#include <stdexcept>
+
 #include "socket.h"
 #include "resolver.h"
+#include "liberror.h"
 
 Socket::Socket(const char *hostname, const char *servicename) : skt(-1), closed(true) {
     Resolver resolver(hostname, servicename, false);
@@ -47,18 +50,27 @@ Socket::Socket(const char *hostname, const char *servicename) : skt(-1), closed(
         return;
     }
 
-    // Este perror() va a imprimir el ultimo error generado.
-    // Es importanto no llamar nada antes ya que cualquier llamada
+    // El errno es una (psuedo) variable global con el ultimo error generado.
+    // Es importante no llamar nada antes ya que cualquier llamada
     // a la libc puede cambiar el errno y hacernos perder el mensaje
     // El manejo de errores en C es muy sensible!
-    perror("socket connection failed");
+    int errno_saved = errno;
 
     // No hay q olvidarse de cerrar el socket en caso de
     // que lo hayamos abierto
     if (skt != -1)
         ::close(skt);
 
-    // TODO lanzar excepcion
+    // Lanzamos una excepcion con el errno que guardamos (preservamos)
+    // excepcion
+    // Dado que probamos multiples direcciones y llamamos a socket() y
+    // a connect() multiples veces podriamos estar ante el caso de varios
+    // errores *distintos*.
+    // Sin embargo vamos a notificar del ultimo error y nada mas.
+    //
+    // Notese que lanzar una excepcion en el constructor es la unica manera
+    // de poder comunicar que un objeto no se construyo
+    throw LibError(errno_saved, "Socket for connection to '%s:%s' failed: ", hostname, servicename);
 }
 
 Socket::Socket(const char *servicename) : skt(-1), closed(true) {
@@ -131,18 +143,14 @@ Socket::Socket(const char *servicename) : skt(-1), closed(true) {
         return;
     }
 
-    // Este perror() va a imprimir el ultimo error generado.
-    // Es importanto no llamar nada antes ya que cualquier llamada
-    // a la libc puede cambiar el errno y hacernos perder el mensaje
-    // El manejo de errores en C es muy sensible!
-    perror("socket setup failed");
+    int errno_saved = errno;
 
     // No hay q olvidarse de cerrar el socket en caso de
     // que lo hayamos abierto
     if (skt != -1)
         ::close(skt);
 
-    // TODO lanzar excepcion
+    throw LibError(errno_saved, "Socket for service '%s' failed: ", servicename);
 }
 
 /*
@@ -168,8 +176,7 @@ int Socket::recvsome(void *data, unsigned int sz, bool *was_closed) {
         return 0;
     } else if (s < 0) {
         // 99% casi seguro que es un error real
-        perror("socket recv failed");
-        return s;
+        throw LibError(errno, "Socket recvsome failed (len %d): ", sz);
     } else {
         return s;
     }
@@ -199,8 +206,7 @@ int Socket::sendsome(const void *data, unsigned int sz, bool *was_closed) {
         }
 
         // 99% casi seguro que es un error
-        perror("socket send failed");
-        return s;
+        throw LibError(errno, "Socket sendsome failed (len %d): ", sz);
     } else {
         return s;
     }
@@ -212,14 +218,16 @@ int Socket::recvall(void *data, unsigned int sz, bool *was_closed) {
 
     while (received < sz) {
         int s = this->recvsome((char*)data + received, sz - received, was_closed);
-        if (s <= 0) {
-            // Si el socket fue cerrado (s == 0) o hubo un error (s < 0)
-            // el metodo Socket::recvsome ya deberia haber seteado was_closed
-            // y haber notificado el error.
-            // Nosotros podemos entonces meramente retornar.
-            // (si no llamaramos a Socket::recvsome() y llamaramos a recv()
-            // deberiamos entonces checkear los errores y no solo retornarlos)
-            return s;
+        if (s == 0) {
+            // Si el socket fue cerrado (s == 0) pero es claro que no logramos
+            // recibir todo lo que queriamos recibir por lo que supondremos
+            // que es un error y lanzamos una excepcion.
+            //
+            // Podriamos crear nuestra propia clase UnexpectedClosed pero
+            // por simplicidad voy a lanzar std::runtime_error que es una excepcion
+            // estandar que me permite pasarle un mensaje simple
+            // a su constructor
+            throw std::runtime_error("Unexpected closed");
         }
         else {
             // Ok, recibimos algo pero no necesariamente todo lo que
@@ -238,14 +246,16 @@ int Socket::sendall(const void *data, unsigned int sz, bool *was_closed) {
 
     while (sent < sz) {
         int s = this->sendsome((char*)data + sent, sz - sent, was_closed);
-        if (s <= 0) {
-            // Si el socket fue cerrado (s == 0) o hubo un error (s < 0)
-            // el metodo Socket::sendall ya deberia haber seteado was_closed
-            // y haber notificado el error.
-            // Nosotros podemos entonces meramente retornar.
-            // (si no llamaramos a Socket::sendsome() y llamaramos a send()
-            // deberiamos entonces checkear los errores y no solo retornarlos)
-            return s;
+        if (s == 0) {
+            // Si el socket fue cerrado (s == 0) pero es claro que no logramos
+            // enviar todo lo que queriamos enviar por lo que supondremos
+            // que es un error y lanzamos una excepcion.
+            //
+            // Podriamos crear nuestra propia clase UnexpectedClosed pero
+            // por simplicidad voy a lanzar std::runtime_error que es una excepcion
+            // estandar que me permite pasarle un mensaje simple
+            // a su constructor
+            throw std::runtime_error("Unexpected closed");
         } else {
             sent += s;
         }
@@ -256,9 +266,8 @@ int Socket::sendall(const void *data, unsigned int sz, bool *was_closed) {
 
 Socket Socket::accept() {
     int skt = ::accept(this->skt, nullptr, nullptr);
-    //if (skt == -1)
-    //    return -1;
-    //    TODO lanzar excepcion
+    if (skt == -1)
+        throw LibError(errno, "Socket accept failed: ");
 
     /*
      * Creamos un Socket en el scope de Socket::accept() y lo retornamos.
@@ -274,22 +283,27 @@ Socket Socket::accept() {
     return Socket(skt);
 }
 
-int Socket::shutdown(int how) {
+void Socket::shutdown(int how) {
     if (::shutdown(this->skt, how) == -1) {
-        perror("socket shutdown failed");
-        return -1;
+        throw LibError(errno, "Socket shutdown failed: ");
     }
-
-    return 0;
 }
 
 int Socket::close() {
+    // Aunque estrictamente uno deberia chequear el codigo de error
+    // de close(), el hecho es que no hay mucho que se pueda hacer
+    // al respecto.
     this->closed = true;
     return ::close(this->skt);
 }
 
 Socket::~Socket() {
     if (not this->closed) {
+        // Aunque estrictamente uno deberia chequear el codigo de error
+        // de shutdown() y close(), el hecho es que no hay mucho que se pueda hacer
+        // al respecto.
+        // Es mas, intentar lanzar una excepcion desde un destructor lleva
+        // al programa abortar asi que lo mejor es dejarlo asi.
         ::shutdown(this->skt, 2);
         ::close(this->skt);
     }
@@ -322,8 +336,9 @@ Socket& Socket::operator=(Socket&& other) {
 
     // A diferencia del constructor por movimiento, nosotros
     // somos un objeto ya construido.
-    // Antes de tomar el ownershipt del otro socket debemos
+    // Antes de tomar el ownership del otro socket debemos
     // liberar nuestro propio recurso.
+    // Al igual que en ~Socket() no chequeamos errores.
     if (not this->closed) {
         ::shutdown(this->skt, 2);
         ::close(this->skt);

@@ -87,16 +87,10 @@ int main() {
         if (was_closed)
             break;
 
-        if (sz < 0)
-            goto recv_failed;
-
-        int s = peer.sendall(buf, sz, &was_closed);
+        peer.sendall(buf, sz, &was_closed);
 
         if (was_closed)
             break;
-
-        if (sz != s)
-            goto send_failed;
     }
 
     ret = 0;
@@ -105,8 +99,8 @@ int main() {
     // Por que instanciamos el Socket en el stack, cuando la funcion main()
     // termine se llamara al destructor de Socket automaticamente
     // lo que significa que no tenemos que acordarnos de liberar
-    // las cosas. Este es el poder de RAII (Resource Acquisition is Initialization)
-send_failed:
-recv_failed:
+    // las cosas.
+    // Esto sucede incluso si se lanzo una excepcion.
+    // Este es el poder de RAII (Resource Acquisition is Initialization)
     return ret;
 }

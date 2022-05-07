@@ -35,7 +35,6 @@
  * */
 int main() {
     int ret = -1;
-    int s = -1;
     bool was_closed = false;
 
     const char req[] = "GET / HTTP/1.1\r\nAccept: */*\r\nConnection: close\r\nHost: www.google.com.ar\r\n\r\n";
@@ -44,11 +43,10 @@ int main() {
      * Inicializamos el socket para que se conecte a google.com
      * contra el servicio http.
      *
-     * Si la conexion falla, cerramos el programa.
-     * Notese como si la conexion falla ni siquiera debemos/podemos
-     * desinicializar el socket ya que la funcion que la inicializa
-     * fallo y por lo tanto una desinicializacion podria terminar
-     * en liberar recursos que no fueron reservados en primer lugar
+     * Si la conexion falla, se lanzara una excepcion y cerramos el programa.
+     * Al ser Socket RAII y estar instanciado en el stack su destructor
+     * no se llamara si se lanza una excepcion dentro del destructor
+     * (asi no liberaremos los recursos que no fueron reservados)
      * */
     Socket skt("www.google.com.ar", "http");
 
@@ -58,15 +56,8 @@ int main() {
      * para que envie todo.
      * En caso que el send() no pueda enviar todo de un solo golpe,
      * socket_sendall() fue codeada para hacer "el loop" por nosotros.
-     *
-     * Notese ademas que si falla (esta u otra funcion abajo) cerramos
-     * el programa pero sin olvidarnos de liberar el socket ya que
-     * aunque el send()/recv() fallen, los recursos *si* fueron reservados
-     * por nosotros.
      * */
-    s = skt.sendall(req, sizeof(req) - 1, &was_closed);
-    if (s != sizeof(req) - 1)
-        goto send_req_failed;
+    skt.sendall(req, sizeof(req) - 1, &was_closed);
 
     /*
      * Iteramos leyendo/recibiendo de a cachos la pagina web.
@@ -82,9 +73,6 @@ int main() {
         if (was_closed)
             break;
 
-        if (r < 0)
-            goto recv_failed;
-
         /*
          * Recorda que con sockets se envian/reciben *bytes*, no texto.
          * La respuesta de google seran bytes y no necesariamente terminaran
@@ -99,8 +87,8 @@ int main() {
     // Por que instanciamos el Socket en el stack, cuando la funcion main()
     // termine se llamara al destructor de Socket automaticamente
     // lo que significa que no tenemos que acordarnos de liberar
-    // las cosas. Este es el poder de RAII (Resource Acquisition is Initialization)
-recv_failed:
-send_req_failed:
+    // las cosas.
+    // Esto sucede incluso si se lanzo una excepcion.
+    // Este es el poder de RAII (Resource Acquisition is Initialization)
     return ret;
 }
